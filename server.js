@@ -23,26 +23,21 @@ const regexDire2 = new RegExp(/[0-9]+ [A-Za-z]+/)
 const regexName = new RegExp(/[A-ZÄËÏÖÜÁÉÍÓÚÂÊÎÔÛÀÈÌÒÙ][a-zäÄëËïÏöÖüÜáéíóúáéíóúÁÉÍÓÚÂÊÎÔÛâêîôûàèìòùÀÈÌÒÙñ]+ [A-ZÄËÏÖÜÁÉÍÓÚÂÊÎÔÛÀÈÌÒÙ][a-zäÄëËïÏöÖüÜáéíóúáéíóúÁÉÍÓÚÂÊÎÔÛâêîôûàèìòùÀÈÌÒÙñ]+/g)
 let dirección;
 let nombre;
-const btnConfirmar = new Buttons("¿Desea confirmar su móvil? 👇",[{body: "Confirmar"},{body: "Cancelar"}])
+const btnConfirmar = new Buttons("¿Desea confirmar su móvil? 👇",[{body: "CONFIRMAR"},{body: "CANCELAR"}])
+const btnTipoViajeName = new Buttons(`👋 ${saludoTiempo()}, *${nombre.match(regexName)[0]}*. Seleccioná tu tipo de viaje 👇`,[{body: "INMEDIATO"},{body: "PROGRAMADO"}])
+const btnTipoViaje = new Buttons(`👋 ${saludoTiempo()}, seleccioná tu tipo de viaje 👇`,[{body: "INMEDIATO"},{body: "PROGRAMADO"}])
 const btnOperadora = new Buttons("Si necesitas comunicarte con la operadora hace click en el siguiente botón 👇.", [{body: "OPERADORA"}])
 let numerosEnAtencion = []
 //cliente escuchando mensajes
 client.on('message',async message => {
-    const tiempo = saludoTiempo()
     if (message.id.remote.includes("@c") && !numerosEnAtencion.find(numero => numero.numero === message.from)) {
-        if (message.body.toLowerCase().includes("hol") || message.body.toLowerCase().includes("bueb") || message.body.toLowerCase().includes("buen ") || message.body.toLowerCase().includes("buena ") || message.body.toLowerCase().includes("necesit") || message.body.toLowerCase().includes("manda") || message.body.toLowerCase().includes("quiero") || message.body.toLowerCase().includes("mánda")){
+        if (message.body.toLowerCase().includes("hol") || message.body.toLowerCase().includes("bueb") || message.body.toLowerCase().includes("buen ") || message.body.toLowerCase().includes("buena") || message.body.toLowerCase().includes("necesit") || message.body.toLowerCase().includes("manda") || message.body.toLowerCase().includes("quiero") || message.body.toLowerCase().includes("mánda") || message.body.toLowerCase().includes("buenos") || message.body.toLowerCase().includes("necesito") || message.body.toLowerCase().includes("remis") || message.body.toLowerCase().includes("solicito") || message.body.toLowerCase().includes("enviame") || message.body.toLowerCase().includes("movil")|| message.body.toLowerCase().includes("auto")){
             nombre = message._data.notifyName
             if (nombre.match(regexName)) {
-                message.reply(`👋 ${tiempo} *${nombre.match(regexName)[0]}*, gracias por comunicarte con Profesional Remis! 🚕`)
-                client.sendMessage(message.from, `*${nombre.match(regexName)[0]}*, ingresá la dirección donde queres tu móvil en *UN SOLO MENSAJE*.👇\n*Dirección + número* (Por ejemplo: Ibazeta 271) `)
-                client.sendMessage(message.from, "➡️En caso de ser un barrio, ingresalo de la siguiente manera: \n*Barrio San Carlos Mza 7 Casa 25*")
-                client.sendMessage(message.from, "⏳Si no recibís respuesta de confirmación de móvil, reingresá la dirección por favor!")
+                client.sendMessage(message.from, btnTipoViajeName)
             }
             else {
-                message.reply(`👋 ${tiempo}, gracias por comunicarse con Profesional Remis! 🚕`)
-                client.sendMessage(message.from, `Ingresá la dirección donde queres tu móvil en *UN SOLO MENSAJE*.👇\n*Dirección + número* (Por ejemplo: Ibazeta 271) `)
-                client.sendMessage(message.from, "➡️En caso de ser un barrio, ingresalo de la siguiente manera: \n*Barrio San Carlos Mza 7 Casa 25*")
-                client.sendMessage(message.from, "⏳Si no recibís respuesta de confirmación de móvil, reingresá la dirección por favor!")
+                client.sendMessage(message.from, btnTipoViaje)
             }
         }
         else if (regexDire1.test(message.body) || regexDire2.test(message.body)) {
@@ -51,15 +46,17 @@ client.on('message',async message => {
             client.sendMessage(message.from, btnConfirmar)
         }
         else if (message.body.toLowerCase().includes("cancel") || Number(message.body) === 2) {
-            client.sendMessage(message.from, "Su móvil fue cancelado ❌\nGracias por contactarnos!")
+            client.sendMessage(message.from, "Su móvil fue cancelado ❌\nGracias por comunicarse con Profesional Remis 🚕!")
+            client.sendMessage(message.from, btnOperadora)
         }
         else if (message.body.toLowerCase().includes("confirm") || Number(message.body) === 1) {
-            client.sendMessage(message.from, "Su móvil va en camino ☑️\nGracias por contactarnos!")
+            client.sendMessage(message.from, "Su móvil va en camino ☑️\nGracias por comunicarse con Profesional Remis 🚕!")
+            client.sendMessage(message.from, btnOperadora)
         }
         else if (message.body.toLowerCase().includes("gracias") || message.body.toLowerCase().includes("ok") || message.body.toLowerCase() === "bueno"){
-            client.sendMessage(message.from, "Gracias por contactarnos!")
+            client.sendMessage(message.from, "Gracias por comunicarse con Profesional Remis 🚕!")
         }
-        else if(message.body.toLowerCase() === "operadora") {
+        else if(message.body.toLowerCase() === "operadora" || message.body.toLowerCase() === "programado") {
             numerosEnAtencion.push({numero: message.from, horaDeEntrada: new Date().getTime()})
             //CODIGO QUE MANDE ALERTA A LA INTERFAZ
             client.sendMessage(message.from, "Aguardá un momento, la operadora te escribirá en unos minutos...⏳")

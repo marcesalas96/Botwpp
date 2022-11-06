@@ -10,3 +10,5 @@ module.exports = saludoTiempo = () => {
         return("Buenas noches")
     }
 }
+
+console.log(`${saludoTiempo()}`)
