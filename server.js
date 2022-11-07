@@ -24,21 +24,24 @@ const regexName = new RegExp(/[A-ZÄËÏÖÜÁÉÍÓÚÂÊÎÔÛÀÈÌÒÙ][a-z�
 let dirección;
 let nombre;
 const btnConfirmar = new Buttons("¿Desea confirmar su móvil? 👇",[{body: "CONFIRMAR"},{body: "CANCELAR"}])
-const btnTipoViajeName = new Buttons(`👋 ${saludoTiempo()}, *${nombre.match(regexName)[0]}*. Seleccioná tu tipo de viaje 👇`,[{body: "INMEDIATO"},{body: "PROGRAMADO"}])
-const btnTipoViaje = new Buttons(`👋 ${saludoTiempo()}, seleccioná tu tipo de viaje 👇`,[{body: "INMEDIATO"},{body: "PROGRAMADO"}])
+const btnTipoViaje = new Buttons(`👋 ${saludoTiempo()}, seleccioná tu tipo de viaje.`,[{body: "INMEDIATO"},{body: "PROGRAMADO"}])
 const btnOperadora = new Buttons("Si necesitas comunicarte con la operadora hace click en el siguiente botón 👇.", [{body: "OPERADORA"}])
 let numerosEnAtencion = []
 //cliente escuchando mensajes
 client.on('message',async message => {
-    if (message.id.remote.includes("@c") && !numerosEnAtencion.find(numero => numero.numero === message.from)) {
+    if ((message.id.remote.includes("@c") && !numerosEnAtencion.find(numero => numero.numero === message.from)) && (message.type === "chat" || message.type === "buttons_response")) {
         if (message.body.toLowerCase().includes("hol") || message.body.toLowerCase().includes("bueb") || message.body.toLowerCase().includes("buen ") || message.body.toLowerCase().includes("buena") || message.body.toLowerCase().includes("necesit") || message.body.toLowerCase().includes("manda") || message.body.toLowerCase().includes("quiero") || message.body.toLowerCase().includes("mánda") || message.body.toLowerCase().includes("buenos") || message.body.toLowerCase().includes("necesito") || message.body.toLowerCase().includes("remis") || message.body.toLowerCase().includes("solicito") || message.body.toLowerCase().includes("enviame") || message.body.toLowerCase().includes("movil")|| message.body.toLowerCase().includes("auto")){
             nombre = message._data.notifyName
             if (nombre.match(regexName)) {
+                const btnTipoViajeName = new Buttons(`👋 ${saludoTiempo()} *${nombre.match(regexName)[0]}*, seleccioná tu tipo de viaje 👇`,[{body: "INMEDIATO"},{body: "PROGRAMADO"}])
                 client.sendMessage(message.from, btnTipoViajeName)
             }
             else {
                 client.sendMessage(message.from, btnTipoViaje)
             }
+        }
+        else if(message.body === "INMEDIATO"){
+            client.sendMessage(message.from, "Ingresá la dirección donde queres tu móvil en *UN SOLO MENSAJE.* 👇\n*Dirección + número* (Por ejemplo: *Belgrano 2204*).")
         }
         else if (regexDire1.test(message.body) || regexDire2.test(message.body)) {
             dirección = message.body
@@ -46,11 +49,11 @@ client.on('message',async message => {
             client.sendMessage(message.from, btnConfirmar)
         }
         else if (message.body.toLowerCase().includes("cancel") || Number(message.body) === 2) {
-            client.sendMessage(message.from, "Su móvil fue cancelado ❌\nGracias por comunicarse con Profesional Remis 🚕!")
+            client.sendMessage(message.from, "Su móvil fue cancelado ❌\nGracias por comunicarse con Profesional Remis 🚕")
             client.sendMessage(message.from, btnOperadora)
         }
         else if (message.body.toLowerCase().includes("confirm") || Number(message.body) === 1) {
-            client.sendMessage(message.from, "Su móvil va en camino ☑️\nGracias por comunicarse con Profesional Remis 🚕!")
+            client.sendMessage(message.from, "Su móvil va en camino ☑️\nGracias por comunicarse con Profesional Remis 🚕")
             client.sendMessage(message.from, btnOperadora)
         }
         else if (message.body.toLowerCase().includes("gracias") || message.body.toLowerCase().includes("ok") || message.body.toLowerCase() === "bueno"){
@@ -63,6 +66,7 @@ client.on('message',async message => {
             await (await message.getChat()).markUnread()
         }
         else {
+            console.log(message.type)
             message.reply("⚠️Disculpa, no entendimos tu mensaje. \nPor favor intentá de nuevo!\nVerificá alguno de los siguientes campos:  \n➡️ Asegurá que la dirección cumpla con el formato indicado.\n➡️ Revisá que tu nombre este bien escrito.")
             client.sendMessage(message.from, btnOperadora)
         }
@@ -70,5 +74,5 @@ client.on('message',async message => {
 })
 
 setInterval(()=> {
-    numerosEnAtencion = numerosEnAtencion.filter(numero => ((new Date().getTime() - numero.horaDeEntrada) <= 300000))
+    numerosEnAtencion = numerosEnAtencion.filter(numero => ((new Date().getTime() - numero.horaDeEntrada) <= 600000))
 },60000)
