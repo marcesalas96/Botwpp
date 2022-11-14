@@ -1,13 +1,14 @@
 // imports
-const { Client, LocalAuth, Buttons, MessageAck } = require('whatsapp-web.js')
+const { Client, LocalAuth, Buttons } = require('whatsapp-web.js')
 const qrcode = require('qrcode-terminal')
 const saludoTiempo = require('./util/saludoTiempo')
 const demora = require('./util/demora')
+const connection = require('./Db/config')
 
 //bdd e inicializacion cliente chat
 const client = new Client({
     authStrategy: new LocalAuth()
-})
+});
 client.on('qr', qr => {
     console.log(qrcode.generate(qr, { small: true }))
 })
@@ -17,16 +18,19 @@ client.on('ready', () => {
 
 })
 client.initialize();
+connection.connect()
+
 //declaración de variables globales
 const regexDire1 = new RegExp(/[A-Za-z]+ [0-9]+/)
 const regexDire2 = new RegExp(/[0-9]+ [A-Za-z]+/)
 const regexName = new RegExp(/[A-ZÄËÏÖÜÁÉÍÓÚÂÊÎÔÛÀÈÌÒÙ][a-zäÄëËïÏöÖüÜáéíóúáéíóúÁÉÍÓÚÂÊÎÔÛâêîôûàèìòùÀÈÌÒÙñ]+ [A-ZÄËÏÖÜÁÉÍÓÚÂÊÎÔÛÀÈÌÒÙ][a-zäÄëËïÏöÖüÜáéíóúáéíóúÁÉÍÓÚÂÊÎÔÛâêîôûàèìòùÀÈÌÒÙñ]+/g)
-let dirección;
+let direccion;
 let nombre;
 const btnConfirmar = new Buttons("¿Desea confirmar su móvil? 👇",[{body: "CONFIRMAR"},{body: "CANCELAR"}])
 const btnTipoViaje = new Buttons(`👋 ${saludoTiempo()}, seleccioná tu tipo de viaje.`,[{body: "INMEDIATO"},{body: "PROGRAMADO"}])
 const btnOperadora = new Buttons("Si necesitas comunicarte con la operadora hace click en el siguiente botón 👇.", [{body: "OPERADORA"}])
 let numerosEnAtencion = []
+let contador = 0
 //cliente escuchando mensajes
 client.on('message',async message => {
     if ((message.id.remote.includes("@c") && !numerosEnAtencion.find(numero => numero.numero === message.from)) && (message.type === "chat" || message.type === "buttons_response")) {
@@ -41,33 +45,36 @@ client.on('message',async message => {
             }
         }
         else if(message.body === "INMEDIATO"){
-            client.sendMessage(message.from, "Ingresá la dirección donde queres tu móvil en *UN SOLO MENSAJE.* 👇\n*Dirección + número* (Por ejemplo: *Belgrano 2204*).")
+            client.sendMessage(message.from, "Ingresá la dirección donde queres tu móvil en *UN SOLO MENSAJE.* 👇\n*Calle + número* (Por ejemplo: *Belgrano 2204*).")
         }
         else if (regexDire1.test(message.body) || regexDire2.test(message.body)) {
-            dirección = message.body
-            message.reply(`⚠️ Su móvil tiene ${demora()} mins de demora.`)
+            direccion = message.body
+            message.reply(`⚠️ Su móvil tiene ${demora()} de demora.`)
             client.sendMessage(message.from, btnConfirmar)
+            contador++
+            connection.query(`INSERT INTO mensajes VALUES(${contador},'${direccion}')`)
+            
         }
         else if (message.body.toLowerCase().includes("cancel") || Number(message.body) === 2) {
+            connection.query(`DELETE FROM mensajes WHERE id = ${contador}`)
+            contador--
             client.sendMessage(message.from, "Su móvil fue cancelado ❌\nGracias por comunicarse con Profesional Remis 🚕")
             client.sendMessage(message.from, btnOperadora)
         }
         else if (message.body.toLowerCase().includes("confirm") || Number(message.body) === 1) {
             client.sendMessage(message.from, "Su móvil va en camino ☑️\nGracias por comunicarse con Profesional Remis 🚕")
-            client.sendMessage(message.from, btnOperadora)
         }
         else if (message.body.toLowerCase().includes("gracias") || message.body.toLowerCase().includes("ok") || message.body.toLowerCase() === "bueno"){
             client.sendMessage(message.from, "Gracias por comunicarse con Profesional Remis 🚕!")
         }
         else if(message.body.toLowerCase() === "operadora" || message.body.toLowerCase() === "programado") {
             numerosEnAtencion.push({numero: message.from, horaDeEntrada: new Date().getTime()})
-            //CODIGO QUE MANDE ALERTA A LA INTERFAZ
             client.sendMessage(message.from, "Aguardá un momento, la operadora te escribirá en unos minutos...⏳")
             await (await message.getChat()).markUnread()
         }
         else {
             console.log(message.type)
-            message.reply("⚠️Disculpa, no entendimos tu mensaje. \nPor favor intentá de nuevo!\nVerificá alguno de los siguientes campos:  \n➡️ Asegurá que la dirección cumpla con el formato indicado.\n➡️ Revisá que tu nombre este bien escrito.")
+            message.reply("⚠️Disculpa, no entendimos tu mensaje. Por favor intentá de nuevo!\nVerificá alguno de los siguientes campos:  \n➡️ Asegurá que la dirección cumpla con el formato indicado.\n➡️ Revisá que tu nombre este bien escrito.")
             client.sendMessage(message.from, btnOperadora)
         }
     }
